@@ -1,0 +1,53 @@
+declare 
+type t_array is table of varchar2(100);
+v_array t_array;
+type t_collection is table of number index by varchar2(30);
+v_pliste t_collection;
+v_key varchar2(30);
+
+-- Funktion innerhalb des anonymen Blocks
+function split_string(p_string varchar2, p_delimiter varchar2) return t_array is
+  v_array t_array := t_array();
+  v_start_pos number := 1;
+  v_end_pos number;
+begin
+  loop
+    v_end_pos := instr(p_string, p_delimiter, v_start_pos);
+    exit when v_end_pos = 0;
+    
+    v_array.extend;
+    v_array(v_array.count) := substr(p_string, v_start_pos, v_end_pos - v_start_pos);
+    
+    v_start_pos := v_end_pos + 1;
+  end loop;
+  
+  v_array.extend;
+  v_array(v_array.count) := substr(p_string, v_start_pos);
+  
+  return v_array;
+end;
+
+begin
+  for c in (
+    SELECT table_name FROM all_tables where owner = 'STAGE'
+    and table_name like 'STG_%' order by 1
+  ) loop
+    v_array := split_string(c.table_name,'_');
+    --zweites Element herauskopieren und in Collection speichern:
+    if not v_pliste.exists(v_array(2)) then 
+      v_pliste(v_array(2)) := 1;
+    end if;
+    
+  end loop;
+  
+  --Erstes Element speichern:
+  v_key := v_pliste.first;
+  
+  --Liste ausgeben:
+  while v_key is not null loop
+    dbms_output.put_line(v_key);
+    v_key := v_pliste.NEXT(v_key);
+  end loop;
+  
+end;
+/
